@@ -9,6 +9,7 @@ var path = require('jsdoc/path');
 var taffy = require('taffydb').taffy;
 var template = require('jsdoc/template');
 var util = require('util');
+var groupBy = require('lodash/groupby');
 
 var htmlsafe = helper.htmlsafe;
 var linkto = helper.linkto;
@@ -287,6 +288,28 @@ function attachModuleSymbols(doclets, modules) {
     });
 }
 
+function buildEventNav(events, linktoFn) {
+    var nav = '';
+    var itemsNav;
+    if (events && events.length) {
+        var classes = groupBy(events, 'memberof');
+        itemsNav = Object.keys(classes).reduce((nav, name) => {
+            nav += '<li>';
+            nav += linktoFn(name, name, undefined, 'Events');
+            var events = classes[name];
+            nav += "<ul class='events'>";
+            nav += events.reduce((eventUl, event) => eventUl + linkto(event.longname, event.name), '');
+            nav += "</ul>";
+            nav += '</li>';
+            return nav;
+        }, '');
+    }
+    if (itemsNav) {
+        nav += '<h3>Events</h3><ul>' + itemsNav + '</ul>';
+    }
+    return nav;
+}
+
 function buildMemberNav(items, itemHeading, itemsSeen, linktoFn) {
     var nav = '';
 
@@ -367,14 +390,25 @@ function linktoExternal(longName, name) {
  */
 
 function buildNav(members) {
-    var nav = '<h2><a href="index.html">Home</a></h2>';
+    var homeText = 'Home';
+    var versionText = '';
+    var packages = find({kind: 'package'});
+    if (packages[0]) {
+      if (packages[0].name) {
+        homeText = packages[0].name;
+      }
+      if (packages[0].version) {
+        versionText = `<span class='package-version'>v${packages[0].version}</span>`
+      }
+    }
+    var nav = `<h2><a href="index.html">${homeText}</a> ${versionText}</h2>`;
     var seen = {};
     var seenTutorials = {};
 
     nav += buildMemberNav(members.classes, 'Classes', seen, linkto);
     nav += buildMemberNav(members.modules, 'Modules', {}, linkto);
     nav += buildMemberNav(members.externals, 'Externals', seen, linktoExternal);
-    nav += buildMemberNav(members.events, 'Events', seen, linkto);
+    nav += buildEventNav(members.events, linkto);
     nav += buildMemberNav(members.namespaces, 'Namespaces', seen, linkto);
     nav += buildMemberNav(members.mixins, 'Mixins', seen, linkto);
     nav += buildMemberNav(members.tutorials, 'Tutorials', seenTutorials, linktoTutorial);
@@ -480,11 +514,11 @@ exports.publish = function(taffyData, opts, tutorials) {
     });
 
     // update outdir if necessary, then create outdir
-    var packageInfo = ( find({kind: 'package'}) || [] ) [0];
-    if (packageInfo && packageInfo.name) {
-        outdir = path.join( outdir, packageInfo.name, (packageInfo.version || '') );
-    }
-    fs.mkPath(outdir);
+    // var packageInfo = ( find({kind: 'package'}) || [] ) [0];
+    // if (packageInfo && packageInfo.name) {
+    //     outdir = path.join( outdir, packageInfo.name, (packageInfo.version || '') );
+    // }
+    // fs.mkPath(outdir);
 
     // copy the template's static files to outdir
     var fromDir = path.join(templatePath, 'static');
