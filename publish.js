@@ -9,7 +9,7 @@ var path = require('jsdoc/path');
 var taffy = require('taffydb').taffy;
 var template = require('jsdoc/template');
 var util = require('util');
-var groupBy = require('lodash/groupby');
+var groupBy = require('lodash/groupBy');
 
 var htmlsafe = helper.htmlsafe;
 var linkto = helper.linkto;
